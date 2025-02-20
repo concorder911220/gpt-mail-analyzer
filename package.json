@@ -1,10 +1,10 @@
 {
-  "name": "python",
+  "name": "email-analyzer",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
@@ -15,7 +15,6 @@
     "express": "^4.21.2",
     "googleapis": "^95.0.0",
     "html-to-text": "^9.0.5",
-    "imap": "^0.8.19",
     "node-cron": "^3.0.3",
     "openai": "^4.85.2",
     "pdf-to-img": "^4.3.0"
