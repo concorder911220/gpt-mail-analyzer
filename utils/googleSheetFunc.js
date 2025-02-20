@@ -1,31 +1,28 @@
-const { google } = require("googleapis");
+import { google } from "googleapis";
+import { config } from "dotenv";
+config();
 
-const serviceAccountKeyFile = "./silken-vial-449017-u0-b09a95239283.json";
-const sheetId = "1Rq2egHec1EQz4fzWXDrCgf8v-wWW8xay5LE0zwXbVvk";
+const serviceAccountKeyFile = "./config/google_sheets_api_key.json";
+const sheetId = process.env.SHEET_ID;
 const tabName = "Sheet1";
-const range = "A:E";
+const range = "A:I";
 
-main().then(() => {
-  console.log("Completed");
-});
-
-async function main() {
+export async function saveToGoogleSheet(item, vender_name, email) {
   // Generating google sheet client
   const googleSheetClient = await _getGoogleSheetClient();
-
-  // Reading Google Sheet from a specific range
-  const data = await _readGoogleSheet(
-    googleSheetClient,
-    sheetId,
-    tabName,
-    range
-  );
-  console.log(data);
-
   // Adding a new row to Google Sheet
   const dataToBeInserted = [
-    ["11", "rohith", "Rohith", "Sharma", "Active"],
-    ["12", "virat", "Virat", "Kohli", "Active"],
+    [
+      item.product_name || "",
+      item.product_price || "",
+      item.offer_terms || "",
+      email?.from?.emailAddress?.address || "",
+      email?.receivedDateTime || "",
+      email?.subject || "",
+      vender_name || "",
+      `https://outlook.office.com/mail/inbox/id/${email?.id}`,
+      new Date().toISOString(),
+    ],
   ];
   await _writeGoogleSheet(
     googleSheetClient,
@@ -48,15 +45,6 @@ async function _getGoogleSheetClient() {
   });
 }
 
-async function _readGoogleSheet(googleSheetClient, sheetId, tabName, range) {
-  const res = await googleSheetClient.spreadsheets.values.get({
-    spreadsheetId: sheetId,
-    range: `${tabName}!${range}`,
-  });
-
-  return res.data.values;
-}
-
 async function _writeGoogleSheet(
   googleSheetClient,
   sheetId,
@@ -64,14 +52,23 @@ async function _writeGoogleSheet(
   range,
   data
 ) {
-  await googleSheetClient.spreadsheets.values.append({
-    spreadsheetId: sheetId,
-    range: `${tabName}!${range}`,
-    valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
-    resource: {
-      majorDimension: "ROWS",
-      values: data,
-    },
-  });
+  try {
+    // Ensure all rows have exactly 9 columns
+    const formattedData = data.map((row) => {
+      while (row.length < 9) row.push(""); // Fill missing columns
+      return row.slice(0, 9); // Trim excess columns
+    });
+
+    await googleSheetClient.spreadsheets.values.append({
+      spreadsheetId: sheetId,
+      range: `${tabName}!A1`, // Start from column A
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      resource: { values: formattedData },
+    });
+
+    console.log("✅ Google Sheet updated successfully!");
+  } catch (error) {
+    console.error("❌ Error updating Google Sheet:", error.message);
+  }
 }
